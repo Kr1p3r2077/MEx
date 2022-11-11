@@ -11,79 +11,33 @@ namespace AntlrTest.Env
 
     }
 
+    public static class TypeTrans
+    {
+
+    }
+
     public class MexType
     {
-        private dynamic value;
-        private string name;
-        private string type;
+        protected dynamic? value;
+        protected string name;
+        protected string type;
 
-        public MexType(string type, string name, object value)
+        public MexType(string type, string name, object? value)
         {
             this.value = value;
             this.name = name;
             this.type = type;
         }
 
-        public void Add(object _value)
+        public object? GetValue()
         {
-            if(_value is int && type == "int")
-            {
-                value += (int)_value;
-                return;
-            }
-            if (_value is int && type == "string")
-            {
-                value += _value;
-                return;
-            }
-            if (_value is string && type == "string")
-            {
-                value += _value.ToString();
-                return;
-            }
-            if (_value is float && type == "float")
-            {
-                value += (float)_value;
-                return;
-            }
+            return value;
         }
 
-        public void Set(object _value)
-        {
-            if (_value is int && type == "int")
-            {
-                value = (int)_value;
-                return;
-            }
-            if (_value is bool && type == "bool")
-            {
-                value = (int)_value;
-                return;
-            }
-            if (_value is float && type == "float")
-            {
-                value = (int)_value;
-                return;
-            }
-            if (_value is string && type == "string")
-            {
-                value = (int)_value;
-                return;
-            }
-        }
-
-        public void Multiply(object _value)
-        {
-            if (_value is int && type == "int")
-            {
-                value *= (int)_value;
-                return;
-            }
-            if (_value is float && type == "float")
-            {
-                value *= (float)_value;
-                return;
-            }
-        }
+        public virtual void Set(object? o) { }
+        public virtual void Add(object? o) { }
+        public virtual void Subtract(object? o) { }
+        public virtual void Multiply(object? o) { }
+        public virtual void Divide(object? o) { }
     }
 }

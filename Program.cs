@@ -5,6 +5,7 @@ using AntlrTest.Visit;
 var filename = "HelloWrot.mex";
 
 var contents = File.ReadAllText(filename);
+PEnv.Init();
 
 AntlrInputStream inputStream = new AntlrInputStream(contents.ToString());
 MexLexer mexLexer = new MexLexer(inputStream);
