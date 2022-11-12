@@ -3,10 +3,12 @@ using AntlrTest.Env;
 using AntlrTest.Mex.Env;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace AntlrTest.Visit
 {
@@ -18,26 +20,31 @@ namespace AntlrTest.Visit
             string variableType = context.IDENTIFIER(0).GetText();
             string variableName = context.IDENTIFIER(1).GetText();
 
-            if(variableType=="int") PEnv.Variables.Add(variableName, new IntegerType(variableType, variableName, null));
-            if(variableType=="string") PEnv.Variables.Add(variableName, new IntegerType(variableType, variableName, null));
-            if(variableType=="bool") PEnv.Variables.Add(variableName, new IntegerType(variableType, variableName, null));
-            if(variableType=="float") PEnv.Variables.Add(variableName, new IntegerType(variableType, variableName, null));
+            if (PEnv.inFunction != "")
+            {
+                variableName = PEnv.inFunction + "." + variableName;
+            }
 
-            return null;
+            PEnv.CreateVariable(variableType, variableName, null);
+
+            return variableName;
         }
 
         public override object? VisitVariableInitExprAssignment([NotNull] MexParser.VariableInitExprAssignmentContext context)
         {
             string variableType = context.IDENTIFIER(0).GetText();
             string variableName = context.IDENTIFIER(1).GetText();
+
+            if (PEnv.inFunction != "")
+            {
+                variableName = PEnv.inFunction + "." + variableName;
+            }
+
             var variableValue = Visit(context.expression());
 
-            if (variableType == "int") PEnv.Variables.Add(variableName, new IntegerType(variableType, variableName, variableValue));
-            if (variableType == "string") PEnv.Variables.Add(variableName, new IntegerType(variableType, variableName, variableValue));
-            if (variableType == "bool") PEnv.Variables.Add(variableName, new IntegerType(variableType, variableName, variableValue));
-            if (variableType == "float") PEnv.Variables.Add(variableName, new IntegerType(variableType, variableName, variableValue));
+            PEnv.CreateVariable(variableType, variableName, variableValue);
 
-            return null;
+            return variableName;
         }
 
         public override object? VisitStandartAssignment ([NotNull] MexParser.StandartAssignmentContext context)
@@ -69,11 +76,13 @@ namespace AntlrTest.Visit
             }
             if (context.FLOAT() != null)
             {
-                return float.Parse(context.INTEGER().GetText());
+                string s = context.FLOAT().GetText();
+                return float.Parse(s, CultureInfo.InvariantCulture);
             }
             if (context.STRING() != null)
             {
-                return context.INTEGER().GetText();
+                var str = context.STRING().GetText();
+                return str.Substring(1, str.Length - 2);
             }
             if (context.BOOL() != null)
             {
@@ -89,6 +98,12 @@ namespace AntlrTest.Visit
         public override object? VisitIdentifierExpression([NotNull] MexParser.IdentifierExpressionContext context)
         {
             string identifier = context.IDENTIFIER().GetText();
+
+            if (PEnv.inFunction != "" && PEnv.funcVariableNames.Contains(identifier))
+            {
+                identifier = PEnv.inFunction + "." + identifier;
+            }
+
             if (PEnv.Variables.ContainsKey(identifier))
             {
                 return PEnv.Variables[identifier]?.GetValue();
@@ -106,9 +121,18 @@ namespace AntlrTest.Visit
 
             var expressions = context.expression().Select(e => Visit(e)).ToArray();
 
+            if(!PEnv.Functions.ContainsKey(functionName)) return null;
             if(PEnv.Functions[functionName] is Func<object?[], object?> func)
             {
                 return func(expressions);
+            }
+            if (PEnv.Functions[functionName] is object[])
+            {
+                PEnv.inFunction = functionName;
+                expressions = expressions.Append(functionName).ToArray();
+                object ret = ((Func<object?[], object?>)((object[])PEnv.Functions[functionName])[0])(expressions);
+                PEnv.inFunction = "";
+                return ret;
             }
             return null;
         }
@@ -130,13 +154,14 @@ namespace AntlrTest.Visit
 
         public override object? VisitMultiplyExpression([NotNull] MexParser.MultiplyExpressionContext context)
         {
-            char op = context.multOp().GetText()[0];
+            string op = context.multOp().GetText();
             var expr0 = Visit(context.expression(0));
             var expr1 = Visit(context.expression(1));
 
-            if (op == '*') return (dynamic?)expr0 * (dynamic?)expr1;
-            if(op == '/') return (dynamic?)expr0 / (dynamic?)expr1;
-            if(op == '%') return (dynamic?)expr0 % (dynamic?)expr1;
+            if (op == "*") return (dynamic?)expr0 * (dynamic?)expr1;
+            if(op == "/") return (dynamic?)expr0 / (dynamic?)expr1;
+            if(op == "%") return (dynamic?)expr0 % (dynamic?)expr1;
+                        if (op == "**") return Math.Pow((dynamic?)expr0, (dynamic?)expr1);
 
             return null;
         }
@@ -159,7 +184,10 @@ namespace AntlrTest.Visit
             var expr0 = Visit(context.expression(0));
             var expr1 = Visit(context.expression(1));
 
-            if (expr0 is not bool || expr1 is not bool) return null;
+            //if (expr0 is not bool || expr1 is not bool) return null;
+
+            if (op == "==") return (dynamic)expr0 == (dynamic)expr1;
+            if (op == "!=") return (dynamic)expr0 != (dynamic)expr1;
 
             if (op == ">") return (dynamic)expr0 > (dynamic)expr1;
             if (op == ">=") return (dynamic)expr0 >= (dynamic)expr1;
@@ -184,40 +212,167 @@ namespace AntlrTest.Visit
             return null;
         }
 
+
+        public override object VisitUnoOpAssignment([NotNull] MexParser.UnoOpAssignmentContext context)
+        {
+            string variableName = context.IDENTIFIER().GetText();
+
+            string op = context.unoOp().GetText();
+
+            if (op == "++") PEnv.Variables[variableName].Inc();
+            if (op == "--") PEnv.Variables[variableName].Dec();
+            if (op == "**") PEnv.Variables[variableName].Square();
+
+            return null;
+        }
+
+        public override object? VisitIfBlock([NotNull] MexParser.IfBlockContext context)
+        {
+            if ((bool)Visit(context.expression()))
+            {
+                Visit(context.block());
+            }
+            else if(context.elseBlock() != null)
+            {
+                Visit(context.elseBlock());
+            }
+            return null;
+        }
+
+        public override object? VisitWhileLoop([NotNull] MexParser.WhileLoopContext context)
+        {
+            while ((bool)Visit(context.expression()))
+            {
+                Visit(context.block());
+            }
+            return null;
+        }
+
+        public override object? VisitRepeatLoop([NotNull] MexParser.RepeatLoopContext context)
+        {
+            int count = (int)Visit(context.expression());
+            for(int i = 0; i < count; i++)
+            {
+                Visit(context.block());
+            }
+
+            return null;
+        }
+
+        public override object? VisitBlock([NotNull] MexParser.BlockContext context)
+        {
+            if (PEnv.inFunction == "")
+            {
+                PEnv.currentBlockLevel++;
+                foreach (var v in context.line())
+                {
+                    Visit(v);
+                }
+                PEnv.DeleteLayerVariables(PEnv.currentBlockLevel);
+                PEnv.currentBlockLevel--;
+                return null;
+            }
+            else
+            {
+                PEnv.currentBlockLevel++;
+                foreach (var v in context.line())
+                {
+                    Visit(v);
+                    if (PEnv.returnedAlready) break;
+                }
+                PEnv.returnedAlready = false;
+                object resultVariableValue = PEnv.Variables[PEnv.inFunction + "." + "return"].GetValue();
+                PEnv.DeleteLayerVariables(PEnv.currentBlockLevel);
+                PEnv.currentBlockLevel--;
+                return resultVariableValue;
+            }
+        }
+
+        public override object VisitForLoop([NotNull] MexParser.ForLoopContext context)
+        {
+            PEnv.currentBlockLevel++;
+
+            
+            string counterVariableName = (string)Visit(context.variableInit());
+
+            if(Visit(context.expression()) is bool)
+            {
+                while ((bool)Visit(context.expression()))
+                {
+                    Visit(context.block());
+                    Visit(context.assignment());
+                }
+            }
+
+            PEnv.DeleteLayerVariables(PEnv.currentBlockLevel);
+            PEnv.currentBlockLevel--;
+            
+            return null;
+        }
+
+        public override object VisitLoopLoop([NotNull] MexParser.LoopLoopContext context)
+        {
+            PEnv.currentBlockLevel++;
+            string counterVariableName = context.IDENTIFIER().GetText();
+            int a = (int)Visit(context.expression(0));
+            int b = (int)Visit(context.expression(1));
+
+            PEnv.CreateVariable(new IntegerType("int", counterVariableName, a));
+
+            if (a < b)
+            {
+                while ((int)PEnv.Variables[counterVariableName].GetValue() < b)
+                {
+                    Visit(context.block());
+                    PEnv.Variables[counterVariableName]?.Inc();
+                }
+            }
+            else
+            {
+                while ((int)PEnv.Variables[counterVariableName].GetValue() > b)
+                {
+                    Visit(context.block());
+                    PEnv.Variables[counterVariableName]?.Dec();
+                }
+            }
+            
+
+            PEnv.DeleteLayerVariables(PEnv.currentBlockLevel);
+            PEnv.currentBlockLevel--;
+
+            return null;
+        }
         /*
-        public override object? VisitToInt([NotNull] MexParser.ToIntContext context)
+        public override object VisitVariableInit([NotNull] MexParser.VariableInitContext context)
         {
-            int num;
-            if(int.TryParse(Visit(context.expression())?.ToString(), out num))
-            {
-                return num;
-            }
-            Console.WriteLine("Error while parsing " + context.expression().GetText() + " to int");
-            return null;
-        }
-
-        public override object? VisitToFloat([NotNull] MexParser.ToFloatContext context)
-        {
-            float num;
-            if (float.TryParse(Visit(context.expression())?.ToString(), out num))
-            {
-                return num;
-            }
-            Console.WriteLine("Error while parsing " + context.expression().GetText() + " to float");
-            return null;
-        }
-
-        public override object? VisitToString([NotNull] MexParser.ToStringContext context)
-        {
-            string? s = Visit(context.expression())?.ToString();
-
-            if(s is not null)
-            {
-                return s;
-            }
-            Console.WriteLine("Error while parsing " + context.expression().GetText() + " to string");
-            return null;
+            ((MexParser.VariableInitExprContext)context).IDENTIFIER();
+            return context;
         }
         */
+        public override object VisitFunctionDeclaraction([NotNull] MexParser.FunctionDeclaractionContext context)
+        {
+            List<string[]> parametrs = new List<string[]>();
+            int c = 0;
+            foreach(var v in context.variableInit())
+            {
+                string t = ((MexParser.VariableInitExprContext)v).IDENTIFIER(0).ToString();
+                string n = ((MexParser.VariableInitExprContext)v).IDENTIFIER(1).ToString();
+
+                parametrs.Add(new string[] { t, n, c.ToString()});
+                c++;
+            }
+            string returnType = context.IDENTIFIER(0).ToString();
+
+            PEnv.Functions.Add(context.IDENTIFIER(1).ToString(), new object[] { PEnv.UserFunction, parametrs, Visit, context.block(), returnType });
+            return null;
+        }
+
+
+        public override object VisitReturn([NotNull] MexParser.ReturnContext context)
+        {
+            PEnv.Variables[PEnv.inFunction + ".return"].Set(Visit(context.expression()));
+            PEnv.returnedAlready = true;
+            return null;
+        }
     }
 }
