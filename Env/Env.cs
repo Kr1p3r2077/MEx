@@ -50,19 +50,20 @@ namespace AntlrTest
             Functions.Add("ToInt", new Func<object?[], object?>(ToInt));
             Functions.Add("ToString", new Func<object?[], object?>(ToString));
             Functions.Add("ToFloat", new Func<object?[], object?>(ToFloat));
+            Functions.Add("WHITESNAKE", new Func<object?[], object?>(WhiteSnake));
         }
 
         //public static Dictionary<string, MexType> FunctionVariables = new Dictionary<string, MexType>();
 
         public static string inFunction = "";
-        public static string inFunctionReturnType = "";
+        //public static string inFunctionReturnType = "";
         public static bool returnedAlready = false;
         public static List<string> funcVariableNames = new List<string>();
         public static object? UserFunction(object?[] args)
         {
             PEnv.currentBlockLevel++;
             dynamic f = Functions[args.Last().ToString()];
-            inFunctionReturnType = f[4].ToString();
+            string inFunctionReturnType = f[4].ToString();
             PEnv.CreateVariable(inFunctionReturnType, PEnv.inFunction + ".return", null);
             for (int i = 0; i < f[1].Count; i++) 
             {
@@ -77,10 +78,11 @@ namespace AntlrTest
             }
             PEnv.currentBlockLevel--;
             var value = f[2](f[3]);
+            PEnv.returnedAlready = false;
             DeleteLayerVariables(currentBlockLevel + 1);
             inFunctionReturnType = "";
-            inFunction = "";
-            funcVariableNames.Clear();
+            inFunction = inFunction.Substring(0,inFunction.Length - args.Last().ToString().Length);
+            if(inFunction == "") funcVariableNames.Clear();
             return value;
         }
 
@@ -115,6 +117,45 @@ namespace AntlrTest
                 return result;
             }
             return null;
+        }
+
+        static object? WhiteSnake(object?[] args)
+        {
+            Console.WriteLine("M|A|D|E|I|N|H|E|A|V|E|N\n\n");
+            Thread.Sleep(2000);
+            Console.WriteLine("Винтовая лестница");
+            Thread.Sleep(1800);
+            Console.WriteLine("Жук-носорог");
+            Thread.Sleep(1600);
+            Console.WriteLine("Город-призрак");
+            Thread.Sleep(1400);
+            Console.WriteLine("Инжирный пирог");
+            Thread.Sleep(1200);
+            Console.WriteLine("Жук-носорог");
+            Thread.Sleep(1000);
+            Console.WriteLine("Виа Долороза");
+            Thread.Sleep(800);
+            Console.WriteLine("Жук-носорог");
+            Thread.Sleep(550);
+            Console.WriteLine("Точка сингулярности");
+            Thread.Sleep(400);
+            Console.WriteLine("Джотто");
+            Thread.Sleep(380);
+            Console.WriteLine("Ангел");
+            Thread.Sleep(320);
+            Console.WriteLine("Гортензия");
+            Thread.Sleep(250);
+            Console.WriteLine("Жук-носорог");
+            Thread.Sleep(200);
+            Console.WriteLine("Точка сингулярности");
+            Thread.Sleep(100);
+            Console.WriteLine("Тайный император");
+            Thread.Sleep(50);
+            for (int i = 0; i < 1000000; i++)
+            {
+                Console.Write("GΔCT ");
+            }
+            return false;
         }
 
         static object? ToString(object?[] args)

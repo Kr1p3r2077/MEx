@@ -128,10 +128,10 @@ namespace AntlrTest.Visit
             }
             if (PEnv.Functions[functionName] is object[])
             {
-                PEnv.inFunction = functionName;
+                PEnv.inFunction += functionName;
                 expressions = expressions.Append(functionName).ToArray();
                 object ret = ((Func<object?[], object?>)((object[])PEnv.Functions[functionName])[0])(expressions);
-                PEnv.inFunction = "";
+                //PEnv.inFunction = "";
                 return ret;
             }
             return null;
@@ -281,10 +281,10 @@ namespace AntlrTest.Visit
                 PEnv.currentBlockLevel++;
                 foreach (var v in context.line())
                 {
+                    string s = v.GetText();
                     Visit(v);
                     if (PEnv.returnedAlready) break;
                 }
-                PEnv.returnedAlready = false;
                 object resultVariableValue = PEnv.Variables[PEnv.inFunction + "." + "return"].GetValue();
                 PEnv.DeleteLayerVariables(PEnv.currentBlockLevel);
                 PEnv.currentBlockLevel--;
@@ -377,6 +377,12 @@ namespace AntlrTest.Visit
             PEnv.Variables[PEnv.inFunction + ".return"].Set(Visit(context.expression()));
             PEnv.returnedAlready = true;
             return null;
+        }
+
+
+        public override object VisitDobavit([NotNull] MexParser.DobavitContext context)
+        {
+            return base.VisitDobavit(context);
         }
     }
 }
