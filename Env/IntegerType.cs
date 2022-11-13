@@ -20,7 +20,7 @@ namespace AntlrTest.Mex.Env
 
         public override void Set(object? o)
         {
-            if (o is int) value = (int)o;
+            value = Convert.ToInt32(o);
         }
         public override void Add(object? o)
         {

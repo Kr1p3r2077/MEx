@@ -16,8 +16,7 @@ namespace AntlrTest
         public static int currentBlockLevel = 0;
 
         public static Dictionary<string, object> Functions { get; } = new();
-
-
+        
         public static void CreateVariable(MexType vari)
         {
             Variables.Add(vari.GetName(), vari);
@@ -26,8 +25,8 @@ namespace AntlrTest
         {
             if (type == "int") PEnv.CreateVariable(new IntegerType("int", name, value));
             if (type == "string") PEnv.CreateVariable(new StringType("string", name, value));
-            if (type == "bool") PEnv.CreateVariable(new BoolType("bool", name, value));
             if (type == "float") PEnv.CreateVariable(new FloatType("float", name, value));
+            if (type == "bool") PEnv.CreateVariable(new BoolType("bool", name, value));
         }
         public static void DeleteVariable(string name)
         {

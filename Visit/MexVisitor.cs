@@ -161,7 +161,11 @@ namespace AntlrTest.Visit
             if (op == "*") return (dynamic?)expr0 * (dynamic?)expr1;
             if(op == "/") return (dynamic?)expr0 / (dynamic?)expr1;
             if(op == "%") return (dynamic?)expr0 % (dynamic?)expr1;
-                        if (op == "**") return Math.Pow((dynamic?)expr0, (dynamic?)expr1);
+            if (op == "**")
+            {
+                var v = Math.Pow((dynamic?)expr0, (dynamic?)expr1);
+                return v;
+            }
 
             return null;
         }
@@ -223,7 +227,7 @@ namespace AntlrTest.Visit
             if (op == "--") PEnv.Variables[variableName].Dec();
             if (op == "**") PEnv.Variables[variableName].Square();
 
-            return null;
+            return PEnv.Variables[variableName].GetValue();
         }
 
         public override object? VisitIfBlock([NotNull] MexParser.IfBlockContext context)
