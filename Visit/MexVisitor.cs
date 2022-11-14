@@ -1,6 +1,7 @@
 ﻿using Antlr4.Runtime.Misc;
 using AntlrTest.Env;
 using AntlrTest.Mex.Env;
+using AntlrTest.Mex.Libs;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -382,7 +383,11 @@ namespace AntlrTest.Visit
 
         public override object VisitDobavit([NotNull] MexParser.DobavitContext context)
         {
-            return base.VisitDobavit(context);
+            var str = context.STRING().GetText();
+            str = str.Substring(1, str.Length - 2);
+
+            Libs.libraries[str].OnAdd();
+            return null;
         }
     }
 }

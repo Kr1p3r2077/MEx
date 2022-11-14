@@ -1,5 +1,6 @@
 ﻿using AntlrTest.Env;
 using AntlrTest.Mex.Env;
+using AntlrTest.Mex.Libs;
 using AntlrTest.Visit;
 using System;
 using System.Collections.Generic;
@@ -44,6 +45,7 @@ namespace AntlrTest
 
         public static void Init()
         {
+            Libs.Init();
             Functions.Add("Write", new Func<object?[], object?>(Write));
             Functions.Add("WriteLn", new Func<object?[], object?>(WriteLn));
             Functions.Add("ReadLn", new Func<object?[], object?>(ReadLn));
