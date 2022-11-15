@@ -12,15 +12,16 @@ namespace AntlrTest
 {
     public static class PEnv
     {
-        public static Dictionary<string, MexType?> Variables { get; set; } = new();
+        public static Dictionary<string, object> Variables { get; set; } = new();
 
         public static int currentBlockLevel = 0;
 
         public static Dictionary<string, object> Functions { get; } = new();
         
-        public static void CreateVariable(MexType vari)
+        public static void CreateVariable(object vari, string name = "")
         {
-            Variables.Add(vari.GetName(), vari);
+            if (name == "") name = ((dynamic)vari).GetName();
+            Variables.Add(name, vari);
         }
         public static void CreateVariable(string type, string name, object? value)
         {
@@ -29,6 +30,14 @@ namespace AntlrTest
             if (type == "float") PEnv.CreateVariable(new FloatType("float", name, value));
             if (type == "bool") PEnv.CreateVariable(new BoolType("bool", name, value));
         }
+
+        public static void CreateVariableArray(string type, string name, object? value)
+        {
+            if (type == "int") PEnv.CreateVariable(new IntegerType("int", name, new List<int>()));
+            if (type == "string") PEnv.CreateVariable(new IntegerType("int", name, new List<int>()));
+            if (type == "float") PEnv.CreateVariable(new IntegerType("int", name, new List<int>()));
+            if (type == "bool") PEnv.CreateVariable(new IntegerType("int", name, new List<int>()));
+        }
         public static void DeleteVariable(string name)
         {
             Variables.Remove(name);
@@ -36,7 +45,7 @@ namespace AntlrTest
 
         public static void DeleteLayerVariables(int layer)
         {
-            var keys = Variables.Where(v => v.Value?.level == layer).Select(v => v.Key);
+            var keys = Variables.Where(v => ((dynamic)v.Value)?.level == layer).Select(v => v.Key);
             foreach(var k in keys)
             {
                 Variables.Remove(k);

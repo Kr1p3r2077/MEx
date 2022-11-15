@@ -55,11 +55,11 @@ namespace AntlrTest.Visit
 
             string op = context.assignmentOp().GetText();
 
-            if (op == "=") PEnv.Variables[variableName]?.Set(value);
-            if (op == "+=") PEnv.Variables[variableName]?.Add(value);
-            if(op == "-=") PEnv.Variables[variableName]?.Subtract(value);
-            if (op == "*=") PEnv.Variables[variableName]?.Multiply(value);
-            if (op == "/=") PEnv.Variables[variableName]?.Divide(value);
+            if (op == "=") ((dynamic)PEnv.Variables[variableName])?.Set(value);
+            if (op == "+=") ((dynamic)PEnv.Variables[variableName])?.Add(value);
+            if(op == "-=") ((dynamic)PEnv.Variables[variableName])?.Subtract(value);
+            if (op == "*=") ((dynamic)PEnv.Variables[variableName])?.Multiply(value);
+            if (op == "/=") ((dynamic)PEnv.Variables[variableName])?.Divide(value);
             //if (op == "%=") PEnv.Variables[variableName] %= (dynamic)value;
 
             return null;
@@ -107,7 +107,7 @@ namespace AntlrTest.Visit
 
             if (PEnv.Variables.ContainsKey(identifier))
             {
-                return PEnv.Variables[identifier]?.GetValue();
+                return ((dynamic)PEnv.Variables[identifier])?.GetValue();
             }
             return null;
         }
@@ -224,11 +224,11 @@ namespace AntlrTest.Visit
 
             string op = context.unoOp().GetText();
 
-            if (op == "++") PEnv.Variables[variableName].Inc();
-            if (op == "--") PEnv.Variables[variableName].Dec();
-            if (op == "**") PEnv.Variables[variableName].Square();
+            if (op == "++") ((dynamic)PEnv.Variables[variableName]).Inc();
+            if (op == "--") ((dynamic)PEnv.Variables[variableName]).Dec();
+            if (op == "**") ((dynamic)PEnv.Variables[variableName]).Square();
 
-            return PEnv.Variables[variableName].GetValue();
+            return ((dynamic)PEnv.Variables[variableName]).GetValue();
         }
 
         public override object? VisitIfBlock([NotNull] MexParser.IfBlockContext context)
@@ -286,7 +286,7 @@ namespace AntlrTest.Visit
                     Visit(v);
                     if (PEnv.returnedAlready) break;
                 }
-                object resultVariableValue = PEnv.Variables[PEnv.inFunction + "." + "return"].GetValue();
+                object resultVariableValue = ((dynamic)PEnv.Variables[PEnv.inFunction + "." + "return"]).GetValue();
                 PEnv.DeleteLayerVariables(PEnv.currentBlockLevel);
                 PEnv.currentBlockLevel--;
                 return resultVariableValue;
@@ -326,18 +326,18 @@ namespace AntlrTest.Visit
 
             if (a < b)
             {
-                while ((int)PEnv.Variables[counterVariableName].GetValue() < b)
+                while (((dynamic)PEnv.Variables[counterVariableName]).GetValue() < b)
                 {
                     Visit(context.block());
-                    PEnv.Variables[counterVariableName]?.Inc();
+                    ((dynamic)PEnv.Variables[counterVariableName])?.Inc();
                 }
             }
             else
             {
-                while ((int)PEnv.Variables[counterVariableName].GetValue() > b)
+                while (((dynamic)PEnv.Variables[counterVariableName]).GetValue() > b)
                 {
                     Visit(context.block());
-                    PEnv.Variables[counterVariableName]?.Dec();
+                    ((dynamic)PEnv.Variables[counterVariableName])?.Dec();
                 }
             }
             
@@ -375,7 +375,7 @@ namespace AntlrTest.Visit
 
         public override object VisitReturn([NotNull] MexParser.ReturnContext context)
         {
-            PEnv.Variables[PEnv.inFunction + ".return"].Set(Visit(context.expression()));
+            ((dynamic)PEnv.Variables[PEnv.inFunction + ".return"]).Set(Visit(context.expression()));
             PEnv.returnedAlready = true;
             return null;
         }
@@ -388,6 +388,22 @@ namespace AntlrTest.Visit
 
             Libs.libraries[str].OnAdd();
             return null;
+        }
+
+
+        public override object VisitVariableArrayInitExpr([NotNull] MexParser.VariableArrayInitExprContext context)
+        {
+            string variableType = context.IDENTIFIER(0).GetText();
+            string variableName = context.IDENTIFIER(1).GetText();
+
+            if (PEnv.inFunction != "")
+            {
+                variableName = PEnv.inFunction + "." + variableName;
+            }
+
+            PEnv.CreateVariableArray(variableType, variableName, null);
+
+            return variableName;
         }
     }
 }

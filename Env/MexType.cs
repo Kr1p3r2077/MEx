@@ -35,6 +35,11 @@ namespace AntlrTest.Env
             return value;
         }
 
+        public object? GetIndexValue(int index)
+        {
+            return value?[index];
+        }
+
         public string GetName()
         {
             return name;

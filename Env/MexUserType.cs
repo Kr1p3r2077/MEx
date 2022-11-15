@@ -9,7 +9,7 @@ namespace AntlrTest.Mex.Env
 {
     public class MexUserType : MexType
     {
-        Dictionary<string, MexType?> fields;
+        Dictionary<string, object> fields;
         Dictionary<string, object> funcs;
         public MexUserType(string type, string name, Dictionary<string, string> _fields, Dictionary<string, object> _funcs) : base(type, name, null)
         {
