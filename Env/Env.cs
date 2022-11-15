@@ -25,19 +25,12 @@ namespace AntlrTest
         }
         public static void CreateVariable(string type, string name, object? value)
         {
-            if (type == "int") PEnv.CreateVariable(new IntegerType("int", name, value));
-            if (type == "string") PEnv.CreateVariable(new StringType("string", name, value));
-            if (type == "float") PEnv.CreateVariable(new FloatType("float", name, value));
-            if (type == "bool") PEnv.CreateVariable(new BoolType("bool", name, value));
+            //if (type == "int") PEnv.CreateVariable(new IntegerType("int", name, value));
+            //if (type == "string") PEnv.CreateVariable(new StringType("string", name, value));
+            //if (type == "float") PEnv.CreateVariable(new FloatType("float", name, value));
+            //if (type == "bool") PEnv.CreateVariable(new BoolType("bool", name, value));
         }
 
-        public static void CreateVariableArray(string type, string name, object? value)
-        {
-            if (type == "int") PEnv.CreateVariable(new IntegerType("int", name, new List<int>()));
-            if (type == "string") PEnv.CreateVariable(new IntegerType("int", name, new List<int>()));
-            if (type == "float") PEnv.CreateVariable(new IntegerType("int", name, new List<int>()));
-            if (type == "bool") PEnv.CreateVariable(new IntegerType("int", name, new List<int>()));
-        }
         public static void DeleteVariable(string name)
         {
             Variables.Remove(name);
