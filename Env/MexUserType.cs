@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace AntlrTest.Mex.Env
 {
+    /*
     public class MexUserType : MexType
     {
         Dictionary<string, MexType?> fields;
@@ -30,4 +31,5 @@ namespace AntlrTest.Mex.Env
             return ((dynamic)funcs[nm])(parametrs);
         }
     }
+    */
 }

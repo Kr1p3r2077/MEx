@@ -14,9 +14,9 @@ namespace AntlrTest.Mex.Libs
             PEnv.Functions.Add("Fact", new Func<object?[], object?>(Factorial));
             PEnv.Functions.Add("Sqrt", new Func<object?[], object?>(Sqrt));
 
-            PEnv.Variables.Add("PI", new FloatType("float", "PI", Math.PI));
-            PEnv.Variables.Add("E", new FloatType("float", "E", Math.E));
-            PEnv.Variables.Add("TAU", new FloatType("float", "E", Math.Tau));
+            //PEnv.Variables.Add("PI", new FloatType("float", "PI", Math.PI));
+            //PEnv.Variables.Add("E", new FloatType("float", "E", Math.E));
+            //PEnv.Variables.Add("TAU", new FloatType("float", "E", Math.Tau));
         }
 
         object? Factorial(object?[] args)

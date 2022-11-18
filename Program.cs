@@ -20,6 +20,9 @@ if (dev)
 
     PEnv.Init();
 
+
+    //PEnv.CreateVariable("int", "a", null);
+
     AntlrInputStream inputStream = new AntlrInputStream(contents.ToString());
     MexLexer mexLexer = new MexLexer(inputStream);
 

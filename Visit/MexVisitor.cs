@@ -322,7 +322,7 @@ namespace AntlrTest.Visit
             int a = (int)Visit(context.expression(0));
             int b = (int)Visit(context.expression(1));
 
-            PEnv.CreateVariable(new IntegerType("int", counterVariableName, a));
+            PEnv.CreateVariable("int", counterVariableName, a);
 
             if (a < b)
             {
@@ -401,9 +401,112 @@ namespace AntlrTest.Visit
                 variableName = PEnv.inFunction + "." + variableName;
             }
 
-            PEnv.CreateVariableArray(variableType, variableName, null);
+            //PEnv.CreateVariableArray(variableType, variableName, null);
 
             return variableName;
+        }
+
+        public override object VisitTypeDeclaration([NotNull] MexParser.TypeDeclarationContext context)
+        {
+            var identifiers = context.IDENTIFIER();
+
+            string className = identifiers[0].GetText();
+
+            List<string[]> vars = new List<string[]>();
+
+            for(int i = 1; i < identifiers.Length; i+=2)
+            {
+                string vType = identifiers[i].GetText();
+                string vName = identifiers[i + 1].GetText();
+
+                vars.Add(new string[] { vType, vName });
+            }
+
+            PEnv.Types.Add(className, new MexTypeInfo(className, vars));
+
+            return null;
+        }
+
+        public override object VisitVariableGetField([NotNull] MexParser.VariableGetFieldContext context)
+        {
+            string varName = context.IDENTIFIER(0).GetText();
+            string fieldName = context.IDENTIFIER(1).GetText();
+
+            return ((MexVariable)PEnv.Variables[varName]).GetField(fieldName)?.GetValue();
+        }
+
+        public override object VisitVariableGetFieldMany([NotNull] MexParser.VariableGetFieldManyContext context)
+        {
+            string varName = context.IDENTIFIER().GetText();
+
+            var vars = context.getFieldExpression();
+
+            MexVariable result = (MexVariable)PEnv.Variables[varName];
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].IDENTIFIER() != null)
+                {
+                    result = result.GetField(vars[i].IDENTIFIER().GetText());
+                }
+                else if(vars[i].functionCall() != null)
+                {
+                    //result = result.GetField(vars[i].IDENTIFIER().GetText());
+                    Console.WriteLine("function from " + varName);
+                }
+                else if (vars[i].expression() != null)
+                {
+                    Console.WriteLine("indexing from " + varName);
+                }
+            }
+
+            return result?.GetValue();
+        }
+
+        public override object VisitStandartAssignmentField([NotNull] MexParser.StandartAssignmentFieldContext context)
+        {
+            string varName = context.IDENTIFIER(0).GetText();
+            string fieldName = context.IDENTIFIER(1).GetText();
+
+            var value = Visit(context.expression());
+
+            MexVariable field = ((MexVariable)PEnv.Variables[varName]).GetField(fieldName);
+
+            string op = context.assignmentOp().GetText();
+
+            if (op == "=") field?.Set(value);
+            if (op == "+=") field?.Add(value);
+            if (op == "-=") field?.Subtract(value);
+            if (op == "*=") field?.Multiply(value);
+            if (op == "/=") field?.Divide(value);
+
+            return null;
+        }
+
+        public override object VisitStandartAssignmentFieldMany([NotNull] MexParser.StandartAssignmentFieldManyContext context)
+        {
+
+            var vars = context.IDENTIFIER();
+
+            var value = Visit(context.expression());
+
+            string varName = vars[0].GetText();
+
+            MexVariable field = ((MexVariable)PEnv.Variables[varName]).GetField(vars[1].GetText());
+            for (int i = 2; i < vars.Length; i++)
+            {
+                field = field.GetField(vars[i].GetText());
+            }
+
+
+            string op = context.assignmentOp().GetText();
+
+            if (op == "=") field?.Set(value);
+            if (op == "+=") field?.Add(value);
+            if (op == "-=") field?.Subtract(value);
+            if (op == "*=") field?.Multiply(value);
+            if (op == "/=") field?.Divide(value);
+
+            return null;
         }
     }
 }

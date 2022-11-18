@@ -17,6 +17,8 @@ namespace AntlrTest
         public static int currentBlockLevel = 0;
 
         public static Dictionary<string, object> Functions { get; } = new();
+
+        public static Dictionary<string, MexTypeInfo> Types { get; set; } = new();
         
         public static void CreateVariable(object vari, string name = "")
         {
@@ -25,10 +27,12 @@ namespace AntlrTest
         }
         public static void CreateVariable(string type, string name, object? value)
         {
-            //if (type == "int") PEnv.CreateVariable(new IntegerType("int", name, value));
-            //if (type == "string") PEnv.CreateVariable(new StringType("string", name, value));
-            //if (type == "float") PEnv.CreateVariable(new FloatType("float", name, value));
-            //if (type == "bool") PEnv.CreateVariable(new BoolType("bool", name, value));
+            Variables.Add(name, new MexVariable(type, name, value));
+        }
+
+        public static void CreateVariableArray(string type, string name, object? value)
+        {
+            Variables.Add(name, new MexVariable(type, name, value));
         }
 
         public static void DeleteVariable(string name)
@@ -55,6 +59,8 @@ namespace AntlrTest
             Functions.Add("ToString", new Func<object?[], object?>(ToString));
             Functions.Add("ToFloat", new Func<object?[], object?>(ToFloat));
             Functions.Add("WHITESNAKE", new Func<object?[], object?>(WhiteSnake));
+
+            Types.Add("int", new MexTypeInfo("int", new List<string[]> { }));
         }
 
         //public static Dictionary<string, MexType> FunctionVariables = new Dictionary<string, MexType>();
@@ -94,7 +100,7 @@ namespace AntlrTest
         {
             foreach (var v in args)
             {
-                Console.Write(args[0] + " ");
+                Console.Write(v + " ");
             }
             return null;
         }
@@ -103,7 +109,7 @@ namespace AntlrTest
         {
             foreach (var v in args)
             {
-                Console.WriteLine(args[0]);
+                Console.WriteLine(v);
             }
             return null;
         }
