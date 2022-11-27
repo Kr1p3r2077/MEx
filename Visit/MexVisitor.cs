@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,8 +19,8 @@ namespace AntlrTest.Visit
     {
         public override object? VisitVariableInitExpr([NotNull] MexParser.VariableInitExprContext context)
         {
-            string variableType = context.IDENTIFIER(0).GetText();
-            string variableName = context.IDENTIFIER(1).GetText();
+            string variableType = context.vInit().IDENTIFIER(0).GetText();
+            string variableName = context.vInit().IDENTIFIER(1).GetText();
 
             if (PEnv.inFunction != "")
             {
@@ -103,6 +104,14 @@ namespace AntlrTest.Visit
             if (PEnv.inFunction != "" && PEnv.funcVariableNames.Contains(identifier))
             {
                 identifier = PEnv.inFunction + "." + identifier;
+            }
+            else if (PEnv.inClassVarName != "" && !PEnv.funcVariableNames.Contains(identifier))
+            {
+                if (((MexVariable)PEnv.Variables[PEnv.inClassVarName]).HasField(identifier))
+                {
+                    return ((MexVariable)PEnv.Variables[PEnv.inClassVarName]).GetField(identifier).GetValue();
+                }
+                return ((MexVariable)PEnv.Variables[PEnv.inFunction + "." + identifier]).GetValue();
             }
 
             if (PEnv.Variables.ContainsKey(identifier))
@@ -356,19 +365,20 @@ namespace AntlrTest.Visit
         */
         public override object VisitFunctionDeclaraction([NotNull] MexParser.FunctionDeclaractionContext context)
         {
+            string cl = PEnv.inClass;
             List<string[]> parametrs = new List<string[]>();
             int c = 0;
             foreach(var v in context.variableInit())
             {
-                string t = ((MexParser.VariableInitExprContext)v).IDENTIFIER(0).ToString();
-                string n = ((MexParser.VariableInitExprContext)v).IDENTIFIER(1).ToString();
+                string t = ((MexParser.VariableInitExprContext)v).vInit().IDENTIFIER(0).ToString();
+                string n = ((MexParser.VariableInitExprContext)v).vInit().IDENTIFIER(1).ToString();
 
                 parametrs.Add(new string[] { t, n, c.ToString()});
                 c++;
             }
             string returnType = context.IDENTIFIER(0).ToString();
 
-            PEnv.Functions.Add(context.IDENTIFIER(1).ToString(), new object[] { PEnv.UserFunction, parametrs, Visit, context.block(), returnType });
+            PEnv.Functions.Add(cl + context.IDENTIFIER(1).ToString(), new object[] { PEnv.UserFunction, parametrs, Visit, context.block(), returnType });
             return null;
         }
 
@@ -408,22 +418,30 @@ namespace AntlrTest.Visit
 
         public override object VisitTypeDeclaration([NotNull] MexParser.TypeDeclarationContext context)
         {
-            var identifiers = context.IDENTIFIER();
+            var identifiers = context.typeDecField();
 
-            string className = identifiers[0].GetText();
+            string className = context.IDENTIFIER().GetText();
+
+            PEnv.inClass = className + ".";
 
             List<string[]> vars = new List<string[]>();
 
-            for(int i = 1; i < identifiers.Length; i+=2)
+            for(int i = 0; i < identifiers.Length; i++)
             {
-                string vType = identifiers[i].GetText();
-                string vName = identifiers[i + 1].GetText();
-
-                vars.Add(new string[] { vType, vName });
+                if (identifiers[i].vInit() != null)
+                {
+                    string vType = identifiers[i].vInit().IDENTIFIER(0).GetText();
+                    string vName = identifiers[i].vInit().IDENTIFIER(1).GetText();
+                    vars.Add(new string[] { vType, vName });
+                }
+                if (identifiers[i].functionDeclaraction() != null)
+                {
+                    Visit(identifiers[i].functionDeclaraction());
+                }
             }
 
             PEnv.Types.Add(className, new MexTypeInfo(className, vars));
-
+            PEnv.inClass = "";
             return null;
         }
 
@@ -432,6 +450,10 @@ namespace AntlrTest.Visit
             string varName = context.IDENTIFIER(0).GetText();
             string fieldName = context.IDENTIFIER(1).GetText();
 
+            if(PEnv.inFunction != "")
+            {
+                varName = PEnv.inFunction + "." + varName;
+            }
             return ((MexVariable)PEnv.Variables[varName]).GetField(fieldName)?.GetValue();
         }
 
@@ -451,7 +473,23 @@ namespace AntlrTest.Visit
                 else if(vars[i].functionCall() != null)
                 {
                     //result = result.GetField(vars[i].IDENTIFIER().GetText());
-                    Console.WriteLine("function from " + varName);
+                    //Console.WriteLine("function from " + varName);
+                    string t = ((MexVariable)PEnv.Variables[varName]).GetVarType();
+
+                    string functionName = t + "." + vars[i].functionCall().IDENTIFIER().GetText();
+
+                    var expressions = vars[i].functionCall().expression().Select(e => Visit(e)).ToArray();
+
+                    if (PEnv.Functions[functionName] is object[])
+                    {
+                        PEnv.inClassVarName = varName;
+                        PEnv.inFunction += functionName;
+                        expressions = expressions.Append(functionName).ToArray();
+                        object ret = ((Func<object?[], object?>)((object[])PEnv.Functions[functionName])[0])(expressions);
+                        //PEnv.inFunction = "";
+                        PEnv.inClassVarName = "";
+                        return ret;
+                    }
                 }
                 else if (vars[i].expression() != null)
                 {
@@ -469,6 +507,10 @@ namespace AntlrTest.Visit
 
             var value = Visit(context.expression());
 
+            if (PEnv.inFunction != "")
+            {
+                varName = PEnv.inFunction + "." + varName;
+            }
             MexVariable field = ((MexVariable)PEnv.Variables[varName]).GetField(fieldName);
 
             string op = context.assignmentOp().GetText();

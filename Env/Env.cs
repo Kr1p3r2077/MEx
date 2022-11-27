@@ -66,6 +66,8 @@ namespace AntlrTest
         //public static Dictionary<string, MexType> FunctionVariables = new Dictionary<string, MexType>();
 
         public static string inFunction = "";
+        public static string inClass = "";
+        public static string inClassVarName = "";
         //public static string inFunctionReturnType = "";
         public static bool returnedAlready = false;
         public static List<string> funcVariableNames = new List<string>();
@@ -93,6 +95,33 @@ namespace AntlrTest
             inFunctionReturnType = "";
             inFunction = inFunction.Substring(0,inFunction.Length - args.Last().ToString().Length);
             if(inFunction == "") funcVariableNames.Clear();
+            return value;
+        }
+
+        public static object? UserClassFunction(object?[] args)
+        {
+            PEnv.currentBlockLevel++;
+            dynamic f = Functions[args.Last().ToString()];
+            string inFunctionReturnType = f[4].ToString();
+            PEnv.CreateVariable(inFunctionReturnType, PEnv.inFunction + ".return", null);
+            for (int i = 0; i < f[1].Count; i++)
+            {
+                string nm = f[1][i][1];
+                if (PEnv.inFunction != "")
+                {
+                    nm = PEnv.inFunction + "." + f[1][i][1];
+                    funcVariableNames.Add(f[1][i][1]);
+
+                }
+                CreateVariable(f[1][i][0], nm, args[i]);
+            }
+            PEnv.currentBlockLevel--;
+            var value = f[2](f[3]);
+            PEnv.returnedAlready = false;
+            DeleteLayerVariables(currentBlockLevel + 1);
+            inFunctionReturnType = "";
+            inFunction = inFunction.Substring(0, inFunction.Length - args.Last().ToString().Length);
+            if (inFunction == "") funcVariableNames.Clear();
             return value;
         }
 

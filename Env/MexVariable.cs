@@ -31,9 +31,18 @@ namespace AntlrTest.Env
             this.level = PEnv.currentBlockLevel;
         }
 
+        public string GetVarType()
+        {
+            return type.name;
+        }
         public object? GetValue()
         {
             return value;
+        }
+
+        public bool HasField(string n)
+        {
+            return variables.ContainsKey(n);
         }
 
         public MexVariable? GetField(string fieldName)
